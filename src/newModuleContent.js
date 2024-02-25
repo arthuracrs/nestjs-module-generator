@@ -33,7 +33,13 @@ export class {{ moduleName }}Controller {
 
   @Get()
   @UseGuards(AuthGuard)
-  async get{{ moduleName }}(@Param() params: any): Promise<{{ moduleName }}Dto> {
+  async getAll(): Promise<{{ moduleName }}Dto[]> {
+    return await this.{{ headlessModuleName }}Service.getAll();
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  async get{{ moduleName }}(@Param() params: { id: string }): Promise<{{ moduleName }}Dto> {
     return await this.{{ headlessModuleName }}Service.get(params.id);
   }
 
@@ -59,7 +65,14 @@ export class {{ moduleName }}Repository {
     return new {{ moduleName }}Dto(result);
   }
 
-  async create({id, name} : { id: string, name: string }): Promise<any> {
+  public async getAll(): Promise<{{ moduleName }}Dto[]> {
+    const resultArray = [];
+    const result = await this._collectionRef.get();
+    result.docs.forEach(x => { resultArray.push(new {{ moduleName }}Dto(x.data())) })
+    return resultArray;
+}
+
+  async create({ id, name } : { id: string, name: string }): Promise<any> {
     try {
       const data = { id, name };
       await this._collectionRef.doc(id).set(data);
@@ -104,7 +117,7 @@ export class {{ moduleName }}Service {
 
     async create(create{{ moduleName }}Dto: Create{{ moduleName }}Dto): Promise<{{ moduleName }}Dto> {
         try {
-            console.log(\`STARTED \${this.constructor.name} create - {name} - \${JSON.stringify({ name })}\`);
+            console.log(\`STARTED \${this.constructor.name} create - {create{{ moduleName }}Dto} - \${JSON.stringify({ create{{ moduleName }}Dto })}\`);
             const newDoc = new {{ moduleName }}Dto({
               id: uuid(),
               name: create{{ moduleName }}Dto.name,
@@ -114,7 +127,9 @@ export class {{ moduleName }}Service {
             console.log(\`SUCCESS \${this.constructor.name} create - {result} - \${JSON.stringify({ result })}\`);
             return result;
         } catch (error) {
-            console.log(\`ERROR \${this.constructor.name} create - {error} - \${JSON.stringify({ error })}\`);
+            console.log(\`ERROR \${this.constructor.name} create: \`);
+            console.error(error);
+            throw error;
         }
     }
 
@@ -126,9 +141,23 @@ export class {{ moduleName }}Service {
           console.log(\`SUCCESS \${this.constructor.name} get - {result} - \${JSON.stringify({ result })}\`)
           return result;
       } catch (error) {
-          console.log(\`ERROR \${this.constructor.name} get - {error} - \${JSON.stringify({ error })}\`)
+          console.log(\`ERROR \${this.constructor.name} get: \`)
+          console.error(error);
+          throw error;
       }
-  }
+    }
+
+    async getAll(): Promise<{{ moduleName }}Dto[]> {
+      try {
+          console.log(\`STARTED \${this.constructor.name} getAll\`)
+          const result = await this.{{ headlessModuleName }}Repository.getAll()
+
+          console.log(\`SUCCESS \${this.constructor.name} getAll - {result} - \${JSON.stringify({ result })}\`)
+          return result;
+      } catch (error) {
+          console.log(\`ERROR \${this.constructor.name} getAll - {error} - \${JSON.stringify({ error })}\`)
+      }
+    }
 }
 `);
 
